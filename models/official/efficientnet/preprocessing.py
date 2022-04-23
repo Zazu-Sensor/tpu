@@ -99,9 +99,9 @@ def _decode_and_random_crop(image_bytes, image_size, resize_method=None):
   image = distorted_bounding_box_crop(
       image_bytes,
       bbox,
-      min_object_covered=0.1,
+      min_object_covered=0.25,
       aspect_ratio_range=(3. / 4, 4. / 3.),
-      area_range=(0.08, 1.0),
+      area_range=(0.5, 1.0),
       max_attempts=10,
       scope=None)
   original_shape = tf.image.extract_jpeg_shape(image_bytes)
@@ -171,6 +171,8 @@ def preprocess_for_train(image_bytes,
     A preprocessed image `Tensor`.
   """
   image = _decode_and_random_crop(image_bytes, image_size, resize_method)
+  #image = tf.io.decode_image(image_bytes)
+  #image = _resize_image(image, image_size, resize_method)
   image = _flip(image)
   image = tf.reshape(image, [image_size, image_size, 3])
 
@@ -218,7 +220,9 @@ def preprocess_for_eval(image_bytes,
   Returns:
     A preprocessed image `Tensor`.
   """
-  image = _decode_and_center_crop(image_bytes, image_size, resize_method)
+  #image = _decode_and_center_crop(image_bytes, image_size, resize_method)
+  image = tf.io.decode_image(image_bytes)
+  image = _resize_image(image, image_size, resize_method)
   image = tf.reshape(image, [image_size, image_size, 3])
   image = tf.image.convert_image_dtype(
       image, dtype=tf.bfloat16 if use_bfloat16 else tf.float32)
