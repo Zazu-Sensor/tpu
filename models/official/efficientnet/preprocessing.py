@@ -99,9 +99,9 @@ def _decode_and_random_crop(image_bytes, image_size, resize_method=None):
   image = distorted_bounding_box_crop(
       image_bytes,
       bbox,
-      min_object_covered=0.25,
+      min_object_covered=0.1,
       aspect_ratio_range=(3. / 4, 4. / 3.),
-      area_range=(0.5, 1.0),
+      area_range=(0.08, 1.0),
       max_attempts=10,
       scope=None)
   original_shape = tf.image.extract_jpeg_shape(image_bytes)
