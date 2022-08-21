@@ -498,6 +498,8 @@ class EvalCkptDriver(object):
     """Restore variables from checkpoint dir."""
     sess.run(tf.global_variables_initializer())
     checkpoint = tf.train.latest_checkpoint(ckpt_dir)
+    print("ckpt_dir={}".format(ckpt_dir))
+    print("checkpoint={}".format(checkpoint))
     if enable_ema:
       ema = tf.train.ExponentialMovingAverage(decay=0.0)
       ema_vars = get_ema_vars()
@@ -567,21 +569,27 @@ class EvalCkptDriver(object):
                     export_ckpt=None):
     """Build and run inference on the target images and labels."""
     label_offset = 1 if self.include_background_label else 0
+    print("label offset in run inference ={}".format(label_offset))
     with tf.Graph().as_default(), tf.Session() as sess:
       images, labels = self.build_dataset(image_files, labels, False)
       probs = self.build_model(images, is_training=False)
       if isinstance(probs, tuple):
         probs = probs[0]
-
+        print("probs in run inference={}".format(probs))
+        
       self.restore_model(sess, ckpt_dir, enable_ema, export_ckpt)
 
       prediction_idx = []
       prediction_prob = []
       for _ in range(len(image_files) // self.batch_size):
         out_probs = sess.run(probs)
+        print("out_probs in run inference ={}".format(out_probs))
         idx = np.argsort(out_probs)[::-1]
+        print("idx in run inference={}".format(idx))
         prediction_idx.append(idx[:5] - label_offset)
+        print("prediction index array in run inference={}".format(prediction_idx))
         prediction_prob.append([out_probs[pid] for pid in idx[:5]])
+        print("prediction prob array in run inference={}".format(prediction_prob))
 
       # Return the top 5 predictions (idx and prob) for each image.
       return prediction_idx, prediction_prob
@@ -606,13 +614,16 @@ class EvalCkptDriver(object):
       index and pred_prob is the top 5 prediction probability.
     """
     classes = json.loads(tf.gfile.Open(labels_map_file).read())
+    print("classes from json file={}".format(classes))
     pred_idx, pred_prob = self.run_inference(
         ckpt_dir, image_files, [0] * len(image_files), enable_ema, export_ckpt)
     for i in range(len(image_files)):
       print('predicted class for image {}: '.format(image_files[i]))
       for j, idx in enumerate(pred_idx[i]):
-        print('  -> top_{} ({:4.2f}%): {}  '.format(j, pred_prob[i][j] * 100,
+            print("Class index={} and value={}".format(j,idx))
+            print('  -> top_{} ({:4.2f}%): {}  '.format(j, pred_prob[i][j] * 100,
                                                     classes[str(idx)]))
+        
     return pred_idx, pred_prob
 
   def eval_imagenet(self, ckpt_dir, imagenet_eval_glob,

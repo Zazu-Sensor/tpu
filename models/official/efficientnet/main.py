@@ -312,6 +312,8 @@ flags.DEFINE_float(
 flags.DEFINE_integer(
     'num_replicas', default=32, help=('Number of TPU replicas.'))
 
+flags.DEFINE_bool(
+    'is_crop_enabled', default=False, help=('enable croping')) 
 
 def model_fn(features, labels, mode, params):
   """The model_fn to be used with TPUEstimator.
@@ -759,7 +761,8 @@ def main(unused_argv):
           mixup_alpha=FLAGS.mixup_alpha,
           randaug_num_layers=FLAGS.randaug_num_layers,
           randaug_magnitude=FLAGS.randaug_magnitude,
-          resize_method=resize_method)
+          resize_method=resize_method,
+          is_crop_enabled = FLAGS.is_crop_enabled) 
     else:
       if FLAGS.data_dir == FAKE_DATA_DIR:
         logging.info('Using fake dataset.')
@@ -781,7 +784,8 @@ def main(unused_argv):
           randaug_num_layers=FLAGS.randaug_num_layers,
           randaug_magnitude=FLAGS.randaug_magnitude,
           resize_method=resize_method,
-          holdout_shards=FLAGS.holdout_shards)
+          holdout_shards=FLAGS.holdout_shards,
+          is_crop_enabled = FLAGS.is_crop_enabled) 
 
   imagenet_train = build_imagenet_input(is_training=True)
   imagenet_eval = build_imagenet_input(is_training=False)

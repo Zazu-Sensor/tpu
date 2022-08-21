@@ -20,7 +20,8 @@ from __future__ import print_function
 
 from absl import app
 from absl import flags
-import tensorflow.compat.v1 as tf
+#import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 import imagenet_input
 import model_builder_factory
@@ -46,21 +47,26 @@ FLAGS = flags.FLAGS
 
 def restore_model(sess, ckpt_dir, enable_ema=True):
   """Restore variables from checkpoint dir."""
-  sess.run(tf.global_variables_initializer())
+  sess.run(tf.compat.v1.global_variables_initializer())
   checkpoint = tf.train.latest_checkpoint(ckpt_dir)
+  print("oyin take note checkpoint={}".format(checkpoint))
+  print("oyin take note ckpt_dir={}".format(ckpt_dir))
+  print("oyin take note session={}".format(sess))
   if enable_ema:
     ema = tf.train.ExponentialMovingAverage(decay=0.0)
-    ema_vars = tf.trainable_variables() + tf.get_collection("moving_vars")
-    for v in tf.global_variables():
+    ema_vars = tf.compat.v1.trainable_variables() + tf.compat.v1.get_collection("moving_vars")
+    for v in tf.compat.v1.global_variables():
       if "moving_mean" in v.name or "moving_variance" in v.name:
         ema_vars.append(v)
     ema_vars = list(set(ema_vars))
     var_dict = ema.variables_to_restore(ema_vars)
+    print("oyin take note, var_dict is NOT none")
   else:
+    print("oyin take note, var_dict is none")
     var_dict = None
 
-  sess.run(tf.global_variables_initializer())
-  saver = tf.train.Saver(var_dict, max_to_keep=1)
+  sess.run(tf.compat.v1.global_variables_initializer())
+  saver = tf.compat.v1.train.Saver(var_dict, max_to_keep=1)
   saver.restore(sess, checkpoint)
 
 
@@ -101,12 +107,12 @@ def main(_):
   # Enables eager context for TF 1.x. TF 2.x will use eager by default.
   # This is used to conveniently get a representative dataset generator using
   # TensorFlow training input helper.
-  tf.enable_eager_execution()
+  #tf.enable_eager_execution()
+  #tf.Session() for TF 1.x 
 
   model_builder = model_builder_factory.get_model_builder(FLAGS.model_name)
-
-  with tf.Graph().as_default(), tf.Session() as sess:
-    images = tf.placeholder(
+  with tf.Graph().as_default(), tf.compat.v1.Session() as sess:
+    images = tf.compat.v1.placeholder(
         tf.float32,
         shape=(1, FLAGS.image_size, FLAGS.image_size, 3),
         name="images")
@@ -118,6 +124,8 @@ def main(_):
     else:
       output_tensor = tf.nn.softmax(logits)
 
+    print("oyin take note ckpt_dir in main ={}".format(FLAGS.ckpt_dir))
+    print("oyin take note output_tflite in main ={}".format(FLAGS.output_tflite))
     restore_model(sess, FLAGS.ckpt_dir, FLAGS.enable_ema)
 
     if FLAGS.output_saved_model_dir:
@@ -134,7 +142,7 @@ def main(_):
       builder.save()
       print("Saved model written to %s" % FLAGS.output_saved_model_dir)
 
-    converter = tf.lite.TFLiteConverter.from_session(sess, [images],
+    converter = tf.compat.v1.lite.TFLiteConverter.from_session(sess, [images],
                                                      [output_tensor])
     if FLAGS.quantize:
       if not FLAGS.data_dir:
@@ -146,14 +154,14 @@ def main(_):
       converter.representative_dataset = tf.lite.RepresentativeDataset(
           representative_dataset_gen)
       converter.optimizations = [tf.lite.Optimize.DEFAULT]
-      converter.inference_input_type = tf.lite.constants.QUANTIZED_UINT8
-      converter.inference_output_type = tf.lite.constants.QUANTIZED_UINT8
+      converter.inference_input_type = tf.compat.v1.lite.constants.QUANTIZED_UINT8
+      converter.inference_output_type = tf.compat.v1.lite.constants.QUANTIZED_UINT8
       converter.target_spec.supported_ops = [
           tf.lite.OpsSet.TFLITE_BUILTINS_INT8
       ]
 
   tflite_buffer = converter.convert()
-  tf.gfile.GFile(FLAGS.output_tflite, "wb").write(tflite_buffer)
+  tf.compat.v1.gfile.GFile(FLAGS.output_tflite, "wb").write(tflite_buffer)
   print("tflite model written to %s" % FLAGS.output_tflite)
 
 

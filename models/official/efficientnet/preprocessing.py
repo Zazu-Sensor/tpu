@@ -149,7 +149,7 @@ def preprocess_for_train(image_bytes,
                          augment_name=None,
                          randaug_num_layers=None,
                          randaug_magnitude=None,
-                         resize_method=None):
+                         resize_method=None,is_crop_enabled=False):
   """Preprocesses the given image for evaluation.
 
   Args:
@@ -170,9 +170,10 @@ def preprocess_for_train(image_bytes,
   Returns:
     A preprocessed image `Tensor`.
   """
-  image = _decode_and_random_crop(image_bytes, image_size, resize_method)
-  #image = tf.io.decode_image(image_bytes)
-  #image = _resize_image(image, image_size, resize_method)
+  if is_crop_enabled:
+        image = _decode_and_random_crop(image_bytes, image_size, resize_method)
+  image = tf.io.decode_image(image_bytes)
+  image = _resize_image(image, image_size, resize_method)
   image = _flip(image)
   image = tf.reshape(image, [image_size, image_size, 3])
 
@@ -208,7 +209,7 @@ def preprocess_for_train(image_bytes,
 def preprocess_for_eval(image_bytes,
                         use_bfloat16,
                         image_size=IMAGE_SIZE,
-                        resize_method=None):
+                        resize_method=None,is_crop_enabled=False):
   """Preprocesses the given image for evaluation.
 
   Args:
@@ -220,7 +221,8 @@ def preprocess_for_eval(image_bytes,
   Returns:
     A preprocessed image `Tensor`.
   """
-  #image = _decode_and_center_crop(image_bytes, image_size, resize_method)
+  #if is_crop_enabled:
+        #image = _decode_and_center_crop(image_bytes, image_size, resize_method)
   image = tf.io.decode_image(image_bytes)
   image = _resize_image(image, image_size, resize_method)
   image = tf.reshape(image, [image_size, image_size, 3])
@@ -236,7 +238,7 @@ def preprocess_image(image_bytes,
                      augment_name=None,
                      randaug_num_layers=None,
                      randaug_magnitude=None,
-                     resize_method=None):
+                     resize_method=None,is_crop_enabled=False):
   """Preprocesses the given image.
 
   Args:
@@ -261,7 +263,7 @@ def preprocess_image(image_bytes,
   if is_training:
     return preprocess_for_train(
         image_bytes, use_bfloat16, image_size, augment_name,
-        randaug_num_layers, randaug_magnitude, resize_method)
+        randaug_num_layers, randaug_magnitude, resize_method,is_crop_enabled)
   else:
     return preprocess_for_eval(image_bytes, use_bfloat16, image_size,
-                               resize_method)
+                               resize_method,is_crop_enabled)

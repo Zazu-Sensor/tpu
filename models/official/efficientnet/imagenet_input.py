@@ -45,7 +45,7 @@ def build_image_serving_input_fn(image_size,
           image_bytes=image_bytes,
           is_training=False,
           image_size=image_size,
-          resize_method=resize_method)
+          resize_method=resize_method,is_crop_required=False)
       return image
 
     image_bytes_list = tf.placeholder(
@@ -74,10 +74,9 @@ class ImageNetTFExampleInput(six.with_metaclass(abc.ABCMeta, object)):
                mixup_alpha=0.0,
                randaug_num_layers=None,
                randaug_magnitude=None,
-               resize_method=None):
-    """Constructor.
-
-    Args:
+               resize_method=None,
+               is_crop_enabled=False): 
+    """Constructor.  Args:
       is_training: `bool` for whether the input is for training
       use_bfloat16: If True, use bfloat16 precision; else use float32.
       num_cores: `int` for the number of TPU cores
@@ -113,6 +112,7 @@ class ImageNetTFExampleInput(six.with_metaclass(abc.ABCMeta, object)):
     self.randaug_num_layers = randaug_num_layers
     self.randaug_magnitude = randaug_magnitude
     self.resize_method = resize_method
+    self.is_crop_enabled = is_crop_enabled
 
   def set_shapes(self, batch_size, images, labels):
     """Statically set the batch_size dimension."""
@@ -311,7 +311,8 @@ class ImageNetInput(ImageNetTFExampleInput):
                randaug_num_layers=None,
                randaug_magnitude=None,
                resize_method=None,
-               holdout_shards=None):
+               holdout_shards=None,
+               is_crop_enabled=False): 
     """Create an input from TFRecord files.
 
     Args:
@@ -351,7 +352,8 @@ class ImageNetInput(ImageNetTFExampleInput):
         augment_name=augment_name,
         mixup_alpha=mixup_alpha,
         randaug_num_layers=randaug_num_layers,
-        randaug_magnitude=randaug_magnitude)
+        randaug_magnitude=randaug_magnitude,
+        is_crop_enabled=is_crop_enabled) 
     self.data_dir = data_dir
     if self.data_dir == 'null' or not self.data_dir:
       self.data_dir = None
@@ -452,7 +454,8 @@ class ImageNetBigtableInput(ImageNetTFExampleInput):
                mixup_alpha=0.0,
                randaug_num_layers=None,
                randaug_magnitude=None,
-               resize_method=None):
+               resize_method=None,
+               is_crop_enabled= False): 
     """Constructs an ImageNet input from a BigtableSelection.
 
     Args:
@@ -485,7 +488,8 @@ class ImageNetBigtableInput(ImageNetTFExampleInput):
         mixup_alpha=mixup_alpha,
         randaug_num_layers=randaug_num_layers,
         randaug_magnitude=randaug_magnitude,
-        resize_method=resize_method)
+        resize_method=resize_method,
+        is_crop_enabled=is_crop_enabled) 
     self.selection = selection
 
   def make_source_dataset(self, index, num_hosts):
